@@ -1,66 +1,100 @@
-// 종횡비를 고정하고 싶을 경우: 아래 두 변수를 0이 아닌 원하는 종, 횡 비율값으로 설정.
-// 종횡비를 고정하고 싶지 않을 경우: 아래 두 변수 중 어느 하나라도 0으로 설정.
-const aspectW = 4;
+// const aspectW = 4;
+const aspectW = 0;
 const aspectH = 3;
-// html에서 클래스명이 container-canvas인 첫 엘리먼트: 컨테이너 가져오기.
 const container = document.body.querySelector('.container-canvas');
-// 필요에 따라 이하에 변수 생성.
+
+let ngonCnt = document.querySelector('input'); // n각형 불러오기
 
 function setup() {
-  // 컨테이너의 현재 위치, 크기 등의 정보 가져와서 객체구조분해할당을 통해 너비, 높이 정보를 변수로 추출.
   const { width: containerW, height: containerH } =
     container.getBoundingClientRect();
-  // 종횡비가 설정되지 않은 경우:
-  // 컨테이너의 크기와 일치하도록 캔버스를 생성하고, 컨테이너의 자녀로 설정.
   if (aspectW === 0 || aspectH === 0) {
     createCanvas(containerW, containerH).parent(container);
   }
-  // 컨테이너의 가로 비율이 설정한 종횡비의 가로 비율보다 클 경우:
-  // 컨테이너의 세로길이에 맞춰 종횡비대로 캔버스를 생성하고, 컨테이너의 자녀로 설정.
   else if (containerW / containerH > aspectW / aspectH) {
     createCanvas((containerH * aspectW) / aspectH, containerH).parent(
       container
     );
   }
-  // 컨테이너의 가로 비율이 설정한 종횡비의 가로 비율보다 작거나 같을 경우:
-  // 컨테이너의 가로길이에 맞춰 종횡비대로 캔버스를 생성하고, 컨테이너의 자녀로 설정.
   else {
     createCanvas(containerW, (containerW * aspectH) / aspectW).parent(
       container
     );
   }
   init();
-  // createCanvas를 제외한 나머지 구문을 여기 혹은 init()에 작성.
 }
 
-// windowResized()에서 setup()에 준하는 구문을 실행해야할 경우를 대비해 init이라는 명칭의 함수를 만들어 둠.
-function init() {}
+function init() {
+  colorMode(HSB, 360, 100, 100);
+  noFill();
+  stroke(0, 0, 100);
+  strokeWeight(2);
+}
 
 function draw() {
-  background('white');
-  circle(mouseX, mouseY, 50);
+  background(0, 0, 15);
+  ngonDraw();
 }
 
 function windowResized() {
-  // 컨테이너의 현재 위치, 크기 등의 정보 가져와서 객체구조분해할당을 통해 너비, 높이 정보를 변수로 추출.
   const { width: containerW, height: containerH } =
     container.getBoundingClientRect();
-  // 종횡비가 설정되지 않은 경우:
-  // 컨테이너의 크기와 일치하도록 캔버스 크기를 조정.
   if (aspectW === 0 || aspectH === 0) {
     resizeCanvas(containerW, containerH);
   }
-  // 컨테이너의 가로 비율이 설정한 종횡비의 가로 비율보다 클 경우:
-  // 컨테이너의 세로길이에 맞춰 종횡비대로 캔버스 크기를 조정.
   else if (containerW / containerH > aspectW / aspectH) {
     resizeCanvas((containerH * aspectW) / aspectH, containerH);
   }
-  // 컨테이너의 가로 비율이 설정한 종횡비의 가로 비율보다 작거나 같을 경우:
-  // 컨테이너의 가로길이에 맞춰 종횡비대로 캔버스 크기를 조정.
   else {
     resizeCanvas(containerW, (containerW * aspectH) / aspectW);
   }
-  // 위 과정을 통해 캔버스 크기가 조정된 경우, 다시 처음부터 그려야할 수도 있다.
-  // 이런 경우 setup()의 일부 구문을 init()에 작성해서 여기서 실행하는게 편리하다.
-  // init();
+  init();
+}
+
+function ngonDraw() {
+  let radius = min(width, height) * .4; // 최대 크기 반지름 설정
+  let maxRepeat = 1000; // 그리기 최대 반복 수(변경가능)
+  let repeatCnt = int(map(mouseX, 0, width, 1, maxRepeat + 1)); // 그리기 반복 수 설정(마우스X에 따라)
+  let ratio = int(map(mouseY, 0, height, 1, 100)) / 100; // 분할점 위치 설정(마우스Y에 따라)
+  let ngonValue = int(ngonCnt.value); // n각형 정수화 저장
+  let verticesArr = []; // 꼭짓점 위치 저장 배열
+
+  if (ratio < 0 || ratio > 1) { // 마우스 화면 밖으로 드래그 했을 때 버그 방지
+    repeatCnt = int(map(mouseX, 0, width, 1, 40));
+    if (mouseX > width) {
+      repeatCnt = 40;
+    }
+  }
+  if (mouseX < 0) {
+    repeatCnt = 1;
+  }
+
+  translate(width * .5, height * .5); // 중심점 기준 설정
+  
+  for (let ngon = 0; ngon < ngonValue; ngon++) { // 초기 도형 설정
+    let rotationAng = radians(360 / ngonValue * ngon - 90); // 슬라이더값에 따른 각도 설정(90도 빼서 초기값을 기준점 기준 수직 설정)
+    let x = cos(rotationAng) * radius;
+    let y = sin(rotationAng) * radius;
+    verticesArr.push({x, y});
+  }
+
+  for (let repeat = 0; repeat < repeatCnt; repeat++) {
+    let nextVerticesArr = []; // 다음 도형 꼭짓점 위치 저장 배열
+    beginShape();
+    let hue = map(repeat, 0, repeatCnt, 0, 360); // 도형 작아지며 색 변화
+    let hueV = (hue + (millis() * .05)) % 360; // 시간에 따라 색 변화
+    stroke(hueV, 20, 80); // 색 적용
+    for (let vertexIdx = 0; vertexIdx < verticesArr.length; vertexIdx++) { // 도형 꼭짓점 좌표 생성 반복문
+      let thisVertex = verticesArr[vertexIdx];
+      let nextVertex = verticesArr[(vertexIdx + 1) % verticesArr.length];
+
+      let newX = lerp(thisVertex.x, nextVertex.x, ratio); // ChatGPT 사용하여 두 점 사이의 거리에서 특정 비의 좌표를 구할 때 lerp 내장함수 활용가능한 것을 인지함
+      let newY = lerp(thisVertex.y, nextVertex.y, ratio);
+      nextVerticesArr.push({x: newX, y: newY});
+      vertex(thisVertex.x, thisVertex.y);
+    }
+    endShape(CLOSE);
+
+    verticesArr = nextVerticesArr; // 다음 도형 좌표 적용
+  }
 }
